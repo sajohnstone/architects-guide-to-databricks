@@ -56,7 +56,7 @@ Together, these pillars create a well-architected lakehouse that’s not just te
 
 ---
 
-## 1.4 Thinking in Systems, Not Scripts
+## 1.4 Thinking in Systems
 
 One of the biggest mindset shifts for architects in the Databricks world is moving from **project thinking** to **platform thinking**.
 
@@ -72,90 +72,20 @@ It’s the difference between writing a Spark job and building an *environment w
 
 ---
 
-## 1.5 The Power of Abstraction
+## 1.7 What Success Looks Like
 
-A well-designed Databricks environment is built on *abstractions*. These aren’t academic — they’re how you prevent chaos at scale.
+A successful architecture lets teams:
 
-| Layer | Purpose | Example Decisions |
-|-------|----------|-------------------|
-| **Network layer** | Isolate control and data planes | Use PrivateLink; split public vs private subnets |
-| **Identity layer** | Manage users, SPNs, and MIs | Map Azure AD groups to Databricks groups via SCIM |
-| **Storage layer** | Control data residency | Managed vs external locations; Delta design patterns |
-| **Compute layer** | Balance cost and performance | Cluster policies, instance pools, auto-scaling rules |
-| **Governance layer** | Enforce access and lineage | Unity Catalog metastore boundaries; auditing strategy |
+- Onboard quickly  
+- Discover, audit, and trust their data  
+- Innovate without governance slowing them  
+- Reproduce infrastructure via code  
+- Track costs relative to value  
 
-Each layer is independently configurable, yet interdependent. The architect’s role is to design the *contracts* between them — what’s shared, what’s isolated, and what’s automated.
-
----
-
-## 1.6 The Multi-Cloud Reality
-
-While Databricks offers similar features across Azure, AWS, and GCP, the *implementation details* vary significantly. Architects must understand both the **Databricks control plane** and the **cloud provider’s native infrastructure**.
-
-| Concept | Azure | AWS |
-|----------|--------|-----|
-| Authentication | Azure AD | IAM / SSO via SAML |
-| Networking | VNET Injection + PrivateLink | VPC Peering + PrivateLink |
-| Storage | ADLS Gen2 | S3 Buckets |
-| Key Management | Key Vault | KMS |
-| Monitoring | Log Analytics / Sentinel | CloudWatch / GuardDuty |
-
-This matters because architectural choices often outlive specific cloud decisions. If you design with abstractions in mind — for example, using Terraform modules that parameterise provider-specific resources — you gain portability and long-term resilience.
-
----
-
-## 1.7 Designing for Change
-
-Perhaps the most underrated skill for a Databricks architect is **anticipating change**.  
-New features arrive monthly. APIs evolve. Terraform providers add new attributes (and deprecate old ones).
-
-You can’t freeze the platform — but you *can* build for controlled evolution:
-- Use **modular Terraform** structures so each workspace or environment can evolve independently.  
-- Maintain **environment parity** (Dev, Stg, Prod) with configuration variables, not duplicated code.  
-- Version-control everything — from policies to permissions.  
-- Document your architecture decisions in ADRs (Architecture Decision Records).
-
-The key isn’t predicting change — it’s absorbing it gracefully.
-
----
-
-## 1.8 What Success Looks Like
-
-A successful Databricks architecture isn’t one where everything is “perfect” on day one. It’s one where:
-- Teams can onboard in hours, not weeks.  
-- Data is discoverable, auditable, and secure.  
-- Governance doesn’t slow innovation — it *enables* it.  
-- Infrastructure and permissions are reproducible via code.  
-- There’s a clear line of sight from cost to value.
-
-As architects, we’re not building data pipelines — we’re building **trust in data**. Databricks is simply the platform that makes that trust scalable.
-
----
-
-## Checklist: The Architect’s Mindset
-
-- Think in **systems**, not pipelines.  
-- Treat **infrastructure as code** from day one.  
-- Enforce **least privilege** and **network isolation** early.  
-- Document architectural decisions — they’re part of the codebase.  
-- Design for **evolution**, not just deployment.  
-- Keep one eye on **costs** — Databricks scales fast, but so do bills.
-
----
-
-## Common Pitfalls
-
-- Treating Databricks like a “managed Spark cluster” instead of a *platform.*  
-- Skipping networking design because “it works by default.”  
-- Allowing unmanaged libraries or ad-hoc cluster creation.  
-- Ignoring Unity Catalog until “later” — it’s foundational, not optional.  
-- Designing for a single team instead of enterprise-scale reusability.
+We’re not just building pipelines — we’re **building trust in data**.
 
 ---
 
 ## Closing Thoughts
 
-The Databricks architect’s role is a blend of strategist and engineer. You need to know the technology deeply enough to design it, but broadly enough to see how it fits within the organisation’s data ecosystem.
-
-This book is your guide to doing that.  
-In the coming chapters, we’ll move from **principles** to **practice** — defining how to build each layer of the Databricks platform, from networking and security to governance and automation.
+The Databricks architect blends strategy and engineering. You need both **technical depth** and **big-picture thinking**. This chapter sets the foundation; the next chapters show how to build each layer of your lakehouse using real-world guidance.

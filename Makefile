@@ -34,7 +34,7 @@ $(HTML): $(SOURCES)
 epub: $(EPUB)
 
 $(EPUB): $(SOURCES)
-	pandoc $^ -o $@ --toc --metadata title="$(TITLE)" --metadata author="$(AUTHOR)" --metadata date="$(DATE)"
+	pandoc $^ -o $@ --toc --metadata title="$(TITLE)" --metadata author="$(AUTHOR)" --metadata date="$(DATE)" --epub-cover-image=./images/cover.png
 
 clean:
 	rm -f $(PDF) $(HTML) $(EPUB)
