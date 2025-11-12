@@ -30,21 +30,26 @@ Note: The Classic Compute Plane has evolved in name over time — it was once ca
 
 ## 2.2 Workspaces, Clusters, and Notebooks
 
-A workspace is akin to an environment (not always the case) but each workspace has a unique url accoated with it.  A workspace acts of as a container for all of your work.
+A **workspace** is akin to an environment (but not always the case) but each workspace has a unique url accoated with it.  A workspace acts of as a container for all of your work so things like clusters, jobs and notebooks are all associated with a workspace.
 
-A **cluster** is the compute environment that executes your workloads. Clusters can be long-lived for interactive development or ephemeral for running jobs. The compute plane allows you to scale clusters according to your workload demands, balancing cost and performance.
+A **cluster** is the compute environment that executes your workloads. Clusters can be long-lived for interactive development or ephemeral for running jobs. Compute can be serverless e.g. running in the Serverless Control Plane on in your own environment using the Classic Compute Plane.  Clusters according to your workload demands, balancing cost and performance.
 
-**Notebooks** are the interactive interface where most development happens. They support multiple languages (Python, SQL, R, Scala) and allow you to mix code, documentation, and visualizations. While notebooks are excellent for experimentation, production workloads are typically run via jobs to ensure reliability and reproducibility.
+**Notebooks** are the interactive interface where most development happens. They support multiple languages (Python, SQL, R, Scala) and allow you to mix code, documentation, and visualizations.
+
+We will talk about plenty of other concepts but if you understand this and a bit about how data is organised you will understand the fundaments.
+
+
+---
+
+## 2.3 Storage Basics
+
+**Catalogs** are the top level storage container in Databricks so when we are referring to data we typically go catalog.schema.table.  Within a catalog you can store structured data in tables and unstructured data in managed volumes.  Databricks has the concept of managed and unmanaged tables, managed tables are stored in Deltalake format operate more like a typical data warehouse.  Unmanaged tables leaves the data where it is, but still allows you to perform SQL and Spark queries over it.
+
+Delta Lake format is based on Parquet — when you create a managed table, it stores the table’s rows as Parquet files. How these files are stored and managed is controlled by the Delta Lake library, which also writes a transaction log (stored in the _delta_log folder) that enables time travel and ACID transactions.
 
 ---
 
-## 2.3 Delta Lake Basics
 
-Delta Lake underpins the reliability of the Databricks lakehouse. By sitting on top of object storage in the Data Plane, it brings **ACID transactions**, schema enforcement, time travel, and support for upserts and deletes to your data lake. 
-
-This means your tables are consistent, historical versions of your data are accessible, and complex update patterns (like slowly changing dimensions) are easier to implement. Delta Lake effectively prevents the “data swamp” problem that often arises with unstructured data lakes.
-
----
 
 ## 2.4 Jobs and Workflows
 
@@ -60,6 +65,10 @@ How access control works is something that we will cover in a later chapter but 
 - Account: There are a few controls which happen at account level one example is xxxx
 - Workspace: Controls such as compute policy, xxxx all happen at workspace level
 - Data: Data level access is applied across all workspaces and covers catalog, schema and table permissions.
+
+## 2.6 Unity Catalog
+
+Unity Catalog stores permissions related to your data.  It works across all workspaces so if I grant access to a Catalog (and it’s attached to two workspaces) I will have access to it in both.  Unity Catalog also has some supporting functions like data linage and stores audits.
 
 ---
 
