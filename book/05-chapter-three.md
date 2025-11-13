@@ -1,4 +1,4 @@
-# Chapter 3: Understanding Key Concepts
+# Chapter 3: Planning Your Databricks Deployment
 
 —
 
@@ -56,38 +56,119 @@ Storage redundancy is an interesting topic and links into BCDR which we will loo
 Finally we need to think about xxx for storing data.  We can create a managed volume as part of a schema and then the data is stored in the same location as the catalog - great if you don’t need to access this data outside of databricks so for example checkpoints or libraries.
 You can also add external locations and a common pattern we see here is to generate and **Input** and **output** external locations for each workspace.  These then make it easy for other applications to interact with Databricks is there is an obvious path for the data.
 
-## Regions and networking
+## Regions and Networking
 
-The question of region is fairly simple, pick a region that is close to where most of your processing is going to happen.  Check that Databricks features you need are supported in that region (not all are).  Try and avoid data going across regions as this can be expensive and slow.
-Networking is a much more complex beast there are similarities between Azure and AWS but it defiantly helps to have someone with networking experiance at this stage.
+### Choosing a Region
 
-### VPCs and Subnet
+Selecting a region is usually straightforward — pick one that’s geographically close to where most of your data and processing will occur.  
+Before deployment, **verify that the Databricks features you plan to use are available in that region**, since not all services (for example, serverless compute or Unity Catalog) are supported everywhere.
 
-In most cases you want to create your own VNET or VPC for each workspace.  For reasons I don’t fully understand Databricks calls this VNET Injection in the Azure world but with AWS and GCP it’s called the slightly less impressive customer-managed VPC.  Naming aside you can let Databricks create a VNET/VPC for you this seems like less things to manage but in most organisations will want to set their own so that they can control routing to their own services.
+Avoid transferring large amounts of data across regions, as cross-region data egress can introduce both **latency** and **additional costs**.
 
-With a VPC / VNet created you need to create the subnets.  Databricks needs two subnets for each workspace, you also probably want to have subnets for private links and reserve some for the future as changing subnets later is very difficult to do.
+—
 
-You also need to think about subnet sizing, at this early stage this can be difficult but try and ensure some growth.  Sizing isn’t super straight forward so check the latest Databricks documentation but essentially the calculation is
+## VPCs and Subnets
 
-No of cluster x nodes - 4
+In most enterprise deployments, it’s best to **create and manage your own network** rather than letting Databricks provision it automatically.
 
-This should give you the number of IPs you need in each subnet.  Once you have this you can add some reserved space and that gives you the CIDR block you need.  Note that on AWS you need subnets in each AZ so your total CIDR range needs to be 2 or 3 times bigger.
-In case you are wondering why -4 it’s because AWS/GCP/Azure all reserve some IP space for things link DNS etc.
+- **Azure:** This is called **VNet Injection**, where the Databricks workspace is deployed into a user-managed Azure Virtual Network (VNet).  
+- **AWS:** The same concept is referred to as a **Customer-Managed VPC**.  
+- **GCP:** Uses a **Customer-Managed VPC** model as well, though “VPC injection” is not a term typically used.
 
-### PrivateLink
+Letting Databricks create the VNet or VPC for you may simplify initial setup, but most organizations prefer to control their own networking to manage **routing, peering, security policies, and private connectivity to other services**.
 
-We can’t leave networking without talking about PrivateLink.  PrivateLink ensures that traffic between the two services uses private IPs inside the cloud provider network backbone, this make’s it more secure and is usually a requirement for large enterprises.  In most cases you want to setup the following private links.  
+### Subnets
 
- - Backend PrivateLink: This goes from the Databricks Control Plane into your account and ensures and cloud API traffic is secure.
- - S3/Storage Account: This ensures that traffic going between your classic compute and storage is secure
- - NCC: Techncailly this isn’t PrivateLink you setup but that you setup from the Databricks Control Plane, but this secures traffic between Serverless and your storage (or other services)
+Each Databricks workspace requires **two dedicated subnets**:
 
-### Data Ingress / Egress
+- One for **host (public)** network interfaces.
+- One for **container (private)** network interfaces.
+
+You should also plan for **additional subnets** for:
+
+- **PrivateLink connections** (for secure data plane traffic).  
+- **Future expansion**, since changing subnet ranges after deployment is difficult or unsupported.
+
+### Subnet Sizing
+
+Subnet sizing depends on the number of nodes that will run in your Databricks clusters. As a rough guideline:
+
+```
+Required IPs ≈ (Number of clusters × Average nodes per cluster) + Reserved IPs
+```
+
+Each cloud provider reserves a few IP addresses per subnet:
+
+- **Azure:** 5 IPs reserved  
+- **AWS:** 5 IPs reserved  
+- **GCP:** 4 IPs reserved  
+
+If you expect growth, allocate extra space when defining CIDR ranges.
+
+On **AWS**, each subnet must exist in a different **Availability Zone (AZ)**, so plan for at least two subnets — typically doubling or tripling your overall CIDR allocation depending on your high-availability setup.
+
+—
+
+## PrivateLink and Secure Connectivity
+
+**PrivateLink** (AWS and Azure) or **Private Service Connect** (GCP) ensures that network traffic between Databricks components and your services stays **within the cloud provider’s private network backbone**, never traversing the public internet.
+
+This is typically a **requirement for enterprise deployments** to enhance security and simplify compliance.
+
+Common PrivateLink configurations include:
+
+- **Backend PrivateLink**  
+  Connects the Databricks **control plane** (managed by Databricks) to your **data plane** (your VPC/VNet).  
+  Ensures control plane API and management traffic are secured via private IPs.
+
+- **Storage PrivateLink**  
+  Connects your Databricks clusters or serverless compute to your **object storage** (e.g., AWS S3, Azure Storage Account, or GCP Cloud Storage).  
+  Prevents data traffic from leaving the internal cloud network.
+
+- **UCC (Unity Catalog Connectivity)**  
+  Databricks uses **Unity Catalog Connectivity (UCC)** — a managed private endpoint from the **serverless control plane** to your data sources (e.g., S3, ADLS, or BigQuery).  
+  This is not a PrivateLink you configure manually; instead, it’s managed by Databricks to secure **Serverless and Unity Catalog traffic** to your resources.
+
+—
+
+## Data Ingress and Egress
+
+Managing **data ingress and egress** ensures that traffic to and from your Databricks workspace is **secure, controlled, and compliant** with enterprise policies.
+
+Common patterns include:
+
+- **Front-End PrivateLink**  
+  Provides a **private IP** for accessing your Databricks workspace.  
+  Once configured, you can **block public access**, making the workspace accessible **only from your VNET/VPC**.  
+
+- **Access Control Lists (ACLs)**  
+  Can be applied to restrict which **IP ranges** can access your workspace.  Easier to setup than Frontend PrivateLink but can be difficult to manage all those IPs.
+
+- **Controlling Outbound Access**  
+  Outbound internet access from workspaces can be restricted using standard VPC/Vnet controls.  Be aware that doing this will impact installing libraries so another approach Will be needed like connecting to a private .
 
 
+## Cost planning: estimating and controlling costs
 
+Predicting consumption can be difficult during the planning stage.  You will need to estimate what workloads you will need across your environments and then use the Databricks pricing calculators to help you.
+It’s worth noting that there are three major costs involved
+- DBT Cost: Calculated per xx this is the cost Databricks charges for using its services.
+- Compute Cost: If using the classic compute plane this is the cost of the VM and EC2 that run the clusters
+- Data Ingress / Egress: In many cases the lesser of the three but if you are transferring large files especially cross region these costs can add up
+Having estimated your costs once you have deployed your development environment and are able to run some PoC workloads you can refine in based on the actual costs.  At each stage of the roll out you should be able to get more production-like data to be able to refine.
 
+### Controlling costs
 
-	4.	Regions and networking
-	5.	Cost planning: estimating and controlling costs
-	6.	How to purchase Databricks licenses
+At the planning stage there are some key controls you can add to ensure that your spend doesn’t exceed your budgets
+- Cost dashboard: this can be deployed from the Account Console and gives you a good overall view of where costs are going at a workspace level.  Use this to focus your energy on the key areas.
+- Budgets: In AWS this can be setup in the Account console on Azure you can do it in xxx.  Use this to send out alerts when you are going to exceed your budget
+- Sizing: There is some trial and error in right sizing so a smaller cluster is not always cheaper as it can take longer and threfor cost more than a larger quicker cluster, but I would still recommend starting small and working up.
+- Cluster Policies: You can use Cluster policies to ensure that clusters are being provisioned with the right size and settings.  A common example is to enforce and auto termination or to ensure no one can create a XXL cluster for running their hello world application. 
+
+## How to purchase Databricks
+
+It’s a common question I get asked but the answer is rather simple.  You can purchase Databricks using the following methods
+ - Azure console
+ - AWS Marketplace
+ - Databricks direct
+In all cases it will redirect back to the Databricks account team and in many cases you will get an Account Manager who can help you.  Each Account Manager has one or more RSA Resident Solution Architect who can help you with many of the technical aspects of Databricks.  

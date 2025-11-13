@@ -140,3 +140,9 @@ Part 4: Real-World Implementations
 
 99. About the Author
 	•	Your background and LinkedIn profile
+	
+	
+	
+Other
+ - Turn off PAT tokens
+ - Using UV flow the create Whls for jobs	
