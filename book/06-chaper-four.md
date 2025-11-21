@@ -49,10 +49,11 @@ It is now the recommended approach for production deployments and supports noteb
 
 ### Development Flow
 
-- **Development Workspace**: Assets are developed in a workspace (e.g., `slimCI`) and organized into logical folders or schemas.  
+- **Development Workspace**: Assets are developed in a workspace and organized into logical folders or schemas.  
 
 - **Deploy to Development**: Use the DAB CLI to deploy assets to the development workspace:  
     dab deploy —workspace <workspace-name> —env dev
+The default behaviour of DAB is to deploy assets with the <user>_ prefix.  Although you can overwrite this behavior this can be really helpful for creating slimCI environments so each engineer can develop their own logical (normally by schema) isolated 'local' environment.  In this scenerio you can consider development as actual two environments 'local' and 'dev' whith dev being the shared deveopment environemtn and local logically isolcated my naming,
 
 - **Promotion to Other Environments**: Deploy to staging or production using a **service principal** to maintain separation of duties:  
     dab deploy —workspace prod —env prod —token <service-principal-token>
