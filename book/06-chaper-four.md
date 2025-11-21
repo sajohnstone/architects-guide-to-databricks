@@ -52,11 +52,69 @@ It is now the recommended approach for production deployments and supports noteb
 - **Development Workspace**: Assets are developed in a workspace and organized into logical folders or schemas.  
 
 - **Deploy to Development**: Use the DAB CLI to deploy assets to the development workspace:  
-    dab deploy —workspace <workspace-name> —env dev
+
+'''bash
+dab deploy —workspace <workspace-name> —env dev
+''''
+
 The default behaviour of DAB is to deploy assets with the <user>_ prefix.  Although you can overwrite this behavior this can be really helpful for creating slimCI environments so each engineer can develop their own logical (normally by schema) isolated 'local' environment.  In this scenerio you can consider development as actual two environments 'local' and 'dev' whith dev being the shared deveopment environemtn and local logically isolcated my naming,
 
 - **Promotion to Other Environments**: Deploy to staging or production using a **service principal** to maintain separation of duties:  
-    dab deploy —workspace prod —env prod —token <service-principal-token>
+
+'''bash
+dab deploy —workspace prod —env prod —token <service-principal-token>
+'''
+
+### Authentication
+You can use PAT tokens with DAB but they Databricks CLI support OAuth with Databricks or Entra so in most cases creating a Service Principal in Databricks or Entra is the best method of development.  You might find some older integrations still require PAT tokens, but in most cases I would recommend disabling PAT tokens for all environments other than DEV.
+
+### Example DAB Job
+
+Often the easiest way is via an example.  In this example we are using a Makefile which will then be called by the CI pipelines.  
+
+'''bash
+# ---------------------------------------------
+# Makefile for Databricks Bundles + UV + Python
+# ---------------------------------------------
+
+PACKAGE := your_package_name
+COVERAGE_THRESHOLD := 95
+
+# ---------- LINTING ----------
+lint:
+	black --check $(PACKAGE)
+	isort --check-only $(PACKAGE)
+	flake8 $(PACKAGE)
+
+# ---------- TESTING ----------
+test:
+	pytest -q
+
+coverage:
+	coverage run -m pytest
+	coverage report --fail-under=$(COVERAGE_THRESHOLD)
+
+# ---------- BUILD WHEEL ----------
+build-wheel:
+	uv build --wheel
+
+# ---------- BUNDLE OPS ----------
+bundle-validate:
+	databricks bundle validate
+
+# ---------- DEPLOY ----------
+deploy-local: bundle-validate build-wheel test
+	databricks bundle deploy --profile local
+
+deploy-test: bundle-validate build-wheel test
+	databricks bundle deploy --profile test
+
+deploy-staging: bundle-validate build-wheel test
+	databricks bundle deploy --profile staging
+
+deploy-prod: bundle-validate build-wheel test
+	databricks bundle deploy --profile prod
+'''
 
 ### Supported Assets
 
